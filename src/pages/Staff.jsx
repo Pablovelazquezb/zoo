@@ -1,14 +1,99 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { User, Stethoscope, Briefcase, Shield } from 'lucide-react';
 
 export default function Staff() {
+    const [staff, setStaff] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchStaff();
+    }, []);
+
+    async function fetchStaff() {
+        try {
+            // Fetch employees with their department and join with role tables
+            // Supabase basic joining is a bit different, we'll fetch base employees + depts first
+            const { data: employees, error } = await supabase
+                .from('employees')
+                .select(`
+          *,
+          departments!employees_dept_id_fkey (dept_name),
+          vets (license_no, specialty),
+          animal_caretakers (specialization_species),
+          managers (office_location)
+        `);
+
+            if (error) throw error;
+            setStaff(employees || []);
+        } catch (error) {
+            console.error('Error fetching staff:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const getRoleIcon = (deptName) => {
+        switch (deptName) {
+            case 'Veterinary Services': return <Stethoscope size={20} color="var(--color-primary)" />;
+            case 'Administration': return <Briefcase size={20} color="var(--color-secondary)" />;
+            case 'Security': return <Shield size={20} color="var(--color-accent)" />;
+            default: return <User size={20} color="var(--color-text-muted)" />;
+        }
+    };
+
     return (
         <div>
-            <h1>Staff Management</h1>
-            <p>Manage employees, vets, and caretakers here.</p>
-            {/* Placeholder for now */}
-            <div className="glass-panel" style={{ padding: '20px', marginTop: '20px' }}>
-                <p>Staff data table will go here.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h1>Staff Management</h1>
+                <button className="glass-button">+ Add Staff</button>
             </div>
+
+            {loading ? (
+                <p>Loading staff...</p>
+            ) : (
+                <div className="grid-cards">
+                    {staff.map(person => (
+                        <div key={person.employee_id} className="glass-panel" style={{ padding: '20px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+                                <div>
+                                    <h3 style={{ margin: '0 0 5px' }}>{person.first_name} {person.last_name}</h3>
+                                    <span style={{
+                                        fontSize: '12px',
+                                        padding: '4px 8px',
+                                        borderRadius: '20px',
+                                        background: 'rgba(255,255,255,0.1)',
+                                        color: 'var(--color-text-muted)'
+                                    }}>
+                                        {person.departments?.dept_name || 'Unassigned'}
+                                    </span>
+                                </div>
+                                {getRoleIcon(person.departments?.dept_name)}
+                            </div>
+
+                            <div style={{ fontSize: '14px', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <p>Shift: {person.shift_timeframe}</p>
+
+                                {/* Role Specific Details */}
+                                {person.vets && (
+                                    <div style={{ color: 'var(--color-primary)' }}>
+                                        <p>Vet License: {person.vets.license_no}</p>
+                                        <p>Specialty: {person.vets.specialty}</p>
+                                    </div>
+                                )}
+                                {person.animal_caretakers && (
+                                    <div style={{ color: 'var(--color-text)' }}>
+                                        <p>Specialization: {person.animal_caretakers.specialization_species}</p>
+                                    </div>
+                                )}
+                                {person.managers && (
+                                    <p>Office: {person.managers.office_location}</p>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

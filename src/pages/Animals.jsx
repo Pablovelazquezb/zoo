@@ -121,10 +121,28 @@ export default function Animals() {
         }
     }
 
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredAnimals = animals.filter(animal =>
+        animal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        animal.species_common_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        animal.species_binomial?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h1>Animals</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+                    <h1 style={{ margin: 0 }}>Animals</h1>
+                    <input
+                        type="text"
+                        placeholder="Search animals..."
+                        className="glass-input"
+                        style={{ maxWidth: '300px' }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
                 <button
                     className="glass-button"
                     onClick={() => setShowForm(!showForm)}
@@ -176,7 +194,7 @@ export default function Animals() {
                 </div>
             ) : (
                 <div className="grid-cards">
-                    {animals.map(animal => (
+                    {filteredAnimals.map(animal => (
                         <div key={animal.animal_id} className="glass-panel" style={{ padding: '20px', position: 'relative' }}>
                             <h3 style={{ margin: '0 0 10px' }}>{animal.name}</h3>
                             <p style={{ color: 'var(--color-primary)', fontSize: '14px', marginBottom: '15px' }}>{animal.species_common_name}</p>

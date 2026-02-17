@@ -28,15 +28,38 @@ export default function Inventory() {
         }
     }
 
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredOutlets = outlets.filter(outlet => {
+        const matchesOutlet = outlet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            outlet.type.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesItems = outlet.inventory_items?.some(item =>
+            item.item_name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        return matchesOutlet || matchesItems;
+    });
+
     return (
         <div>
-            <h1>Inventory Management</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
+                <h1 style={{ margin: 0 }}>Inventory Management</h1>
+                <input
+                    type="text"
+                    placeholder="Search outlets or items..."
+                    className="glass-input"
+                    style={{ maxWidth: '300px' }}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
 
             {loading ? (
                 <p>Loading inventory...</p>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
-                    {outlets.map(outlet => (
+                    {filteredOutlets.map(outlet => (
                         <div key={outlet.outlet_id} className="glass-panel" style={{ padding: '20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '15px' }}>
                                 {outlet.type === 'Food' ? <Coffee color="var(--color-primary)" /> : <ShoppingBag color="var(--color-secondary)" />}

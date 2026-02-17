@@ -42,10 +42,28 @@ export default function Staff() {
         }
     };
 
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredStaff = staff.filter(person =>
+        person.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        person.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        person.departments?.dept_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h1>Staff Management</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+                    <h1 style={{ margin: 0 }}>Staff Management</h1>
+                    <input
+                        type="text"
+                        placeholder="Search staff..."
+                        className="glass-input"
+                        style={{ maxWidth: '300px' }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
                 <button className="glass-button">+ Add Staff</button>
             </div>
 
@@ -53,7 +71,7 @@ export default function Staff() {
                 <p>Loading staff...</p>
             ) : (
                 <div className="grid-cards">
-                    {staff.map(person => (
+                    {filteredStaff.map(person => (
                         <div key={person.employee_id} className="glass-panel" style={{ padding: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
                                 <div>

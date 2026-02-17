@@ -1,11 +1,21 @@
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { Activity, Plus, X } from 'lucide-react';
 
 export default function Animals() {
     const [animals, setAnimals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [zones, setZones] = useState([]);
+
+    // Medical History State
+    const [selectedAnimal, setSelectedAnimal] = useState(null);
+    const [medicalHistory, setMedicalHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [showHistoryForm, setShowHistoryForm] = useState(false);
+    const [historyForm, setHistoryForm] = useState({ injury: '', disease: '', date_treated: '', animal_age_at_treatment: '' });
+
     const [formData, setFormData] = useState({
         name: '',
         species_common_name: '',
@@ -22,9 +32,9 @@ export default function Animals() {
     async function fetchAnimals() {
         try {
             const { data, error } = await supabase.from('animals').select(`
-        *,
-        animal_zones (zone_name)
-      `);
+    *,
+    animal_zones(zone_name)
+        `);
             if (error) throw error;
             setAnimals(data || []);
         } catch (error) {
@@ -37,6 +47,44 @@ export default function Animals() {
     async function fetchZones() {
         const { data } = await supabase.from('animal_zones').select('*');
         if (data) setZones(data);
+    }
+
+    async function fetchMedicalHistory(animal) {
+        if (!animal.health_record_id) return;
+        setHistoryLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('medical_history')
+                .select('*')
+                .eq('record_id', animal.health_record_id)
+                .order('date_treated', { ascending: false });
+
+            if (error) throw error;
+            setMedicalHistory(data || []);
+        } catch (error) {
+            console.error('Error fetching history:', error);
+        } finally {
+            setHistoryLoading(false);
+        }
+    }
+
+    async function handleHistorySubmit(e) {
+        e.preventDefault();
+        try {
+            const { error } = await supabase.from('medical_history').insert([{
+                record_id: selectedAnimal.health_record_id,
+                ...historyForm,
+                animal_age_at_treatment: parseInt(historyForm.animal_age_at_treatment)
+            }]);
+
+            if (error) throw error;
+
+            setShowHistoryForm(false);
+            setHistoryForm({ injury: '', disease: '', date_treated: '', animal_age_at_treatment: '' });
+            fetchMedicalHistory(selectedAnimal);
+        } catch (error) {
+            console.error("Error adding medical record", error);
+        }
     }
 
     async function handleSubmit(e) {
@@ -129,17 +177,88 @@ export default function Animals() {
             ) : (
                 <div className="grid-cards">
                     {animals.map(animal => (
-                        <div key={animal.animal_id} className="glass-panel" style={{ padding: '20px' }}>
+                        <div key={animal.animal_id} className="glass-panel" style={{ padding: '20px', position: 'relative' }}>
                             <h3 style={{ margin: '0 0 10px' }}>{animal.name}</h3>
                             <p style={{ color: 'var(--color-primary)', fontSize: '14px', marginBottom: '15px' }}>{animal.species_common_name}</p>
-                            <div style={{ fontSize: '14px', color: 'var(--color-text-muted)' }}>
+                            <div style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: '15px' }}>
                                 <p>Age: {animal.age} years</p>
                                 <p>Zone: {animal.animal_zones?.zone_name || 'Unassigned'}</p>
                             </div>
+                            <button
+                                className="glass-button"
+                                style={{ width: '100%', fontSize: '12px', padding: '8px' }}
+                                onClick={() => {
+                                    setSelectedAnimal(animal);
+                                    fetchMedicalHistory(animal);
+                                }}
+                            >
+                                View Medical Records
+                            </button>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Medical History Modal */}
+            {selectedAnimal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div className="glass-panel" style={{ width: '600px', maxWidth: '90vw', maxHeight: '80vh', overflowY: 'auto', padding: '30px', background: '#0f172a', border: '1px solid var(--glass-border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Activity color="var(--color-accent)" />
+                                <h2 style={{ margin: 0 }}>Medical History: {selectedAnimal.name}</h2>
+                            </div>
+                            <button onClick={() => setSelectedAnimal(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X /></button>
+                        </div>
+
+                        {!showHistoryForm ? (
+                            <button
+                                className="glass-button"
+                                onClick={() => setShowHistoryForm(true)}
+                                style={{ width: '100%', marginBottom: '20px', background: 'rgba(255,255,255,0.05)' }}
+                            >
+                                + Add Medical Entry
+                            </button>
+                        ) : (
+                            <form onSubmit={handleHistorySubmit} style={{ marginBottom: '30px', background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '10px' }}>
+                                <h4 style={{ marginTop: 0 }}>New Entry</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                    <input placeholder="Injury (Optional)" className="glass-input" value={historyForm.injury} onChange={e => setHistoryForm({ ...historyForm, injury: e.target.value })} />
+                                    <input placeholder="Disease (Optional)" className="glass-input" value={historyForm.disease} onChange={e => setHistoryForm({ ...historyForm, disease: e.target.value })} />
+                                    <input type="date" required className="glass-input" value={historyForm.date_treated} onChange={e => setHistoryForm({ ...historyForm, date_treated: e.target.value })} />
+                                    <input type="number" placeholder="Age at Treatment" required className="glass-input" value={historyForm.animal_age_at_treatment} onChange={e => setHistoryForm({ ...historyForm, animal_age_at_treatment: e.target.value })} />
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                                    <button type="submit" className="glass-button" style={{ background: 'var(--color-primary)', flex: 1 }}>Save</button>
+                                    <button type="button" className="glass-button" onClick={() => setShowHistoryForm(false)} style={{ flex: 1 }}>Cancel</button>
+                                </div>
+                            </form>
+                        )}
+
+                        {historyLoading ? <p>Loading records...</p> : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                {medicalHistory.length === 0 ? <p style={{ color: 'var(--color-text-muted)', textAlign: 'center' }}>No medical history found.</p> :
+                                    medicalHistory.map(record => (
+                                        <div key={record.history_id} style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '10px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                                <span style={{ fontWeight: 'bold' }}>{new Date(record.date_treated).toLocaleDateString()}</span>
+                                                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Age: {record.animal_age_at_treatment}</span>
+                                            </div>
+                                            <p style={{ margin: '5px 0', color: 'var(--color-primary)' }}>{record.disease ? `Disease: ${record.disease} ` : ''}</p>
+                                            <p style={{ margin: '5px 0', color: 'orange' }}>{record.injury ? `Injury: ${record.injury} ` : ''}</p>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
     );
 }
+

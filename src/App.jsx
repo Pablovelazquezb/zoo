@@ -6,6 +6,7 @@ import Animals from './pages/Animals';
 import Staff from './pages/Staff';
 import Tickets from './pages/Tickets';
 import Events from './pages/Events';
+import Inventory from './pages/Inventory';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/staff" element={<Staff />} />
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/inventory" element={<Inventory />} />
         </Routes>
       </Layout>
     </Router>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Cat, Users, Ticket, Calendar, Settings } from 'lucide-react';
+import { LayoutDashboard, Cat, Users, Ticket, Calendar, Settings, ShoppingBag } from 'lucide-react';
 
 export default function Layout({ children }) {
     const location = useLocation();
@@ -11,6 +11,7 @@ export default function Layout({ children }) {
         { name: 'Staff', path: '/staff', icon: <Users size={20} /> },
         { name: 'Tickets', path: '/tickets', icon: <Ticket size={20} /> },
         { name: 'Events', path: '/events', icon: <Calendar size={20} /> },
+        { name: 'Inventory', path: '/inventory', icon: <ShoppingBag size={20} /> },
     ];
 
     return (

@@ -7,7 +7,9 @@ export default function Dashboard() {
         animals: 0,
         visitors: 0,
         staff: 0,
-        revenue: 0
+        totalRevenue: 0,
+        ticketRevenue: 0,
+        retailRevenue: 0
     });
     const [loading, setLoading] = useState(true);
 
@@ -17,40 +19,35 @@ export default function Dashboard() {
 
     async function fetchStats() {
         try {
-            // 1. Count Animals
-            const { count: animalCount, error: animalError } = await supabase
-                .from('animals')
-                .select('*', { count: 'exact', head: true });
-            if (animalError) throw animalError;
+            const { count: animalCount } = await supabase.from('animals').select('*', { count: 'exact', head: true });
+            const { count: staffCount } = await supabase.from('employees').select('*', { count: 'exact', head: true });
+            const { count: customerCount } = await supabase.from('customers').select('*', { count: 'exact', head: true });
 
-            // 2. Count Staff
-            const { count: staffCount, error: staffError } = await supabase
-                .from('employees')
-                .select('*', { count: 'exact', head: true });
-            if (staffError) throw staffError;
+            // Calculate Ticket Revenue
+            const { data: tickets } = await supabase.from('tickets').select('price_cents');
+            const ticketRevenueCents = tickets?.reduce((sum, t) => sum + (t.price_cents || 0), 0) || 0;
 
-            // 3. Calculate Revenue (Sum of Transactions)
-            const { data: transactions, error: revenueError } = await supabase
-                .from('transactions')
-                .select('total_amount_cents');
+            // Calculate Retail Revenue (try/catch in case sale_items doesn't exist yet)
+            let retailRevenueCents = 0;
+            try {
+                const { data: sales, error } = await supabase.from('sale_items').select('quantity, price_at_sale_cents');
+                if (!error && sales) {
+                    retailRevenueCents = sales.reduce((sum, s) => sum + (s.quantity * s.price_at_sale_cents), 0);
+                }
+            } catch (e) {
+                console.warn("Sale items table might not exist yet", e);
+            }
 
-            if (revenueError) throw revenueError;
-
-            const totalRevenueCents = transactions.reduce((sum, t) => sum + (t.total_amount_cents || 0), 0);
-
-            // 4. Visitors (Estimate based on ticket sales for today - defaulting to dummy data for now as we don't have gate tracking)
-            // For now, let's just count total customers
-            const { count: customerCount, error: customerError } = await supabase
-                .from('customers')
-                .select('*', { count: 'exact', head: true });
+            const totalRevenueCents = ticketRevenueCents + retailRevenueCents;
 
             setStats({
                 animals: animalCount || 0,
-                visitors: customerCount || 0, // Using total customers as proxy for visitors
+                visitors: customerCount || 0,
                 staff: staffCount || 0,
-                revenue: totalRevenueCents / 100
+                totalRevenue: totalRevenueCents / 100,
+                ticketRevenue: ticketRevenueCents / 100,
+                retailRevenue: retailRevenueCents / 100
             });
-
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
         } finally {
@@ -89,14 +86,27 @@ export default function Dashboard() {
                         {loading ? '...' : stats.visitors}
                     </p>
                 </div>
+
+                {/* Revenue Card with Breakdown */}
                 <div className="glass-panel" style={{ padding: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                         <Ticket size={24} color="#f59e0b" />
                         <h3>Total Revenue</h3>
                     </div>
                     <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '10px 0', color: 'var(--color-primary)' }}>
-                        {loading ? '...' : `$${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                        {loading ? '...' : `$${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                     </p>
+                    {/* Breakdown */}
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Tickets:</span>
+                            <span>${stats.ticketRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Retail:</span>
+                            <span>${stats.retailRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

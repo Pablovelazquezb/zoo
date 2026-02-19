@@ -1,0 +1,2 @@
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS price_cents INT NOT NULL DEFAULT 500;
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS description TEXT;

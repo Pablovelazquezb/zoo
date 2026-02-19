@@ -136,6 +136,8 @@ CREATE TABLE inventory_items (
   item_name TEXT NOT NULL,
   stock_count INT NOT NULL DEFAULT 0,
   restock_threshold INT NOT NULL DEFAULT 10,
+  price_cents INT NOT NULL DEFAULT 500, -- Default price $5.00
+  description TEXT,
   is_low_stock BOOLEAN GENERATED ALWAYS AS (stock_count <= restock_threshold) STORED
 );
 

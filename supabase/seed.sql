@@ -77,8 +77,8 @@ INSERT INTO retail_outlets (name, type) VALUES
 ('Jungle Cafe', 'Food');
 
 -- Inventory
-INSERT INTO inventory_items (outlet_id, item_name, stock_count, restock_threshold) VALUES
-(1, 'Plush Lion', 150, 20),
-(1, 'Zoo T-Shirt', 8, 15), -- Low stock!
-(2, 'Cheeseburger', 50, 10),
-(2, 'Soda', 200, 30);
+INSERT INTO inventory_items (outlet_id, item_name, stock_count, restock_threshold, price_cents, description) VALUES
+(1, 'Plush Lion', 150, 20, 1999, 'Soft and cuddly lion plush toy'),
+(1, 'Zoo T-Shirt', 8, 15, 2499, '100% Cotton branded t-shirt'), -- Low stock!
+(2, 'Cheeseburger', 50, 10, 899, 'Grilled beef patty with cheese'),
+(2, 'Soda', 200, 30, 250, 'Chilled carbonated beverage');

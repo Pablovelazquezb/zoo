@@ -8,6 +8,12 @@ export default function Inventory() {
     const [cart, setCart] = useState([]);
     const [isCheckout, setIsCheckout] = useState(false);
 
+    // Add Item State
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [newItem, setNewItem] = useState({
+        outlet_id: '', item_name: '', stock_count: '', restock_threshold: 10, price_cents: '', description: ''
+    });
+
     useEffect(() => {
         fetchInventory();
     }, []);
@@ -67,13 +73,7 @@ export default function Inventory() {
         }));
     };
 
-    const cartTotal = cart.reduce((sum, item) => sum + (item.price_cents || 500) * item.quantity, 0); // Default price 500 cents if not in DB? Schema doesn't have price in inventory_items... wait.
-
-    // Schema check: inventory_items doesn't have price. tickets have price. 
-    // I should probably add price to inventory_items or assume a default for now.
-    // implementation_plan.md says "price_at_sale_cents" in sale_items, which implies price comes from somewhere.
-    // I missed adding price to inventory_items in schema. 
-    // I'll add a default price of $5.00 (500 cents) for now and note it.
+    const cartTotal = cart.reduce((sum, item) => sum + (item.price_cents || 0) * item.quantity, 0);
 
     const handleCheckout = async () => {
         if (cart.length === 0) return;
@@ -91,26 +91,20 @@ export default function Inventory() {
                 transaction_id: txn.transaction_id,
                 item_id: item.item_id,
                 quantity: item.quantity,
-                price_at_sale_cents: 500 // Hardcoded for now as per schema limitation
+                price_at_sale_cents: item.price_cents || 0
             }));
             const { error: salesError } = await supabase.from('sale_items').insert(saleItems);
             if (salesError) throw salesError;
 
-            // 3. Update Inventory Stock
+            // 3. Update Inventory Stock (Safe RPC)
             for (const item of cart) {
                 const { error: stockError } = await supabase.rpc('decrement_stock', {
                     item_id_param: item.item_id,
                     quantity_param: item.quantity
                 });
-                // Since I didn't create a migration for RPC, I'll do a simple update
-                // But concurrency... for now simple fetch and update
-
-                // Fetch current first
-                const { data: currentItem } = await supabase.from('inventory_items').select('stock_count').eq('item_id', item.item_id).single();
-                if (currentItem) {
-                    await supabase.from('inventory_items')
-                        .update({ stock_count: Math.max(0, currentItem.stock_count - item.quantity) })
-                        .eq('item_id', item.item_id);
+                if (stockError) {
+                    console.error('Error decrementing stock for item', item.item_id, stockError);
+                    // In a real app we might want to rollback transaction, but for now just log
                 }
             }
 
@@ -125,20 +119,109 @@ export default function Inventory() {
         }
     };
 
+    const handleAddItem = async (e) => {
+        e.preventDefault();
+        try {
+            const { error } = await supabase.from('inventory_items').insert([{
+                ...newItem,
+                stock_count: parseInt(newItem.stock_count),
+                restock_threshold: parseInt(newItem.restock_threshold),
+                price_cents: Math.round(parseFloat(newItem.price_cents) * 100), // Input as dollars/float
+                outlet_id: parseInt(newItem.outlet_id)
+            }]);
+
+            if (error) throw error;
+
+            setShowAddForm(false);
+            setNewItem({ outlet_id: '', item_name: '', stock_count: '', restock_threshold: 10, price_cents: '', description: '' });
+            fetchInventory();
+        } catch (error) {
+            console.error('Error adding item:', error);
+            alert('Failed to add item: ' + error.message);
+        }
+    };
+
+    const handleRestock = async (item) => {
+        const amountStr = prompt(`Restock ${item.item_name}. Enter quantity to add:`, "10");
+        if (!amountStr) return;
+        const amount = parseInt(amountStr);
+        if (isNaN(amount) || amount <= 0) return;
+
+        try {
+            // Simple increment, no need for complex RPC although we could make one
+            const { error } = await supabase.from('inventory_items')
+                .update({ stock_count: item.stock_count + amount })
+                .eq('item_id', item.item_id);
+
+            if (error) throw error;
+            fetchInventory();
+        } catch (error) {
+            console.error('Error restocking:', error);
+            alert('Failed to restock: ' + error.message);
+        }
+    };
+
     return (
         <div style={{ display: 'flex', gap: '20px', alignItems: 'start' }}>
             <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
-                    <h1 style={{ margin: 0 }}>Inventory Management</h1>
-                    <input
-                        type="text"
-                        placeholder="Search outlets or items..."
-                        className="glass-input"
-                        style={{ maxWidth: '300px' }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+                        <h1 style={{ margin: 0 }}>Inventory Management</h1>
+                        <input
+                            type="text"
+                            placeholder="Search outlets or items..."
+                            className="glass-input"
+                            style={{ maxWidth: '300px' }}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <button
+                        className="glass-button"
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        style={{ background: showAddForm ? 'var(--color-accent)' : 'rgba(255,255,255,0.1)' }}
+                    >
+                        {showAddForm ? 'Cancel' : '+ Add Item'}
+                    </button>
                 </div>
+
+                {showAddForm && (
+                    <div className="glass-panel" style={{ padding: '20px', marginBottom: '30px', border: '1px solid var(--color-secondary)' }}>
+                        <h3>New Inventory Item</h3>
+                        <form onSubmit={handleAddItem} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                                <label style={{ display: 'block', marginBottom: '5px' }}>Outlet</label>
+                                <select required className="glass-input" value={newItem.outlet_id} onChange={e => setNewItem({ ...newItem, outlet_id: e.target.value })}>
+                                    <option value="">Select Outlet...</option>
+                                    {outlets.map(o => <option key={o.outlet_id} value={o.outlet_id}>{o.name} ({o.type})</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px' }}>Item Name</label>
+                                <input required className="glass-input" value={newItem.item_name} onChange={e => setNewItem({ ...newItem, item_name: e.target.value })} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px' }}>Price ($)</label>
+                                <input required type="number" step="0.01" className="glass-input" value={newItem.price_cents} onChange={e => setNewItem({ ...newItem, price_cents: e.target.value })} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px' }}>Initial Stock</label>
+                                <input required type="number" className="glass-input" value={newItem.stock_count} onChange={e => setNewItem({ ...newItem, stock_count: e.target.value })} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px' }}>Low Stock Threshold</label>
+                                <input required type="number" className="glass-input" value={newItem.restock_threshold} onChange={e => setNewItem({ ...newItem, restock_threshold: e.target.value })} />
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                                <label style={{ display: 'block', marginBottom: '5px' }}>Description</label>
+                                <input className="glass-input" value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} />
+                            </div>
+                            <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                                <button type="submit" className="glass-button" style={{ background: 'var(--color-secondary)', width: '100%' }}>Save Item</button>
+                            </div>
+                        </form>
+                    </div>
+                )}
 
                 {loading ? (
                     <p>Loading inventory...</p>
@@ -165,7 +248,10 @@ export default function Inventory() {
                                         <div key={item.item_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 <Package size={16} color="var(--color-text-muted)" />
-                                                <span>{item.item_name}</span>
+                                                <div>
+                                                    <span style={{ display: 'block', fontWeight: 'bold' }}>{item.item_name}</span>
+                                                    {item.description && <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{item.description}</span>}
+                                                </div>
                                             </div>
 
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -173,6 +259,19 @@ export default function Inventory() {
                                                     <span style={{ fontWeight: 'bold', fontSize: '18px', display: 'block' }}>{item.stock_count}</span>
                                                     <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>Stock</span>
                                                 </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <span style={{ fontWeight: 'bold', fontSize: '18px', display: 'block' }}>${((item.price_cents || 0) / 100).toFixed(2)}</span>
+                                                    <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>Price</span>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleRestock(item)}
+                                                    className="glass-button"
+                                                    style={{ padding: '5px 10px', fontSize: '12px', background: 'rgba(255,255,255,0.05)' }}
+                                                    title="Quick Restock"
+                                                >
+                                                    + Stock
+                                                </button>
 
                                                 {item.stock_count <= item.restock_threshold && (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--color-accent)', background: 'rgba(244, 63, 94, 0.1)', padding: '5px 8px', borderRadius: '6px' }}>
@@ -223,7 +322,7 @@ export default function Inventory() {
                                         <span style={{ fontSize: '14px' }}>{item.quantity}</span>
                                         <button onClick={() => updateQuantity(item.item_id, 1)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><Plus size={12} /></button>
                                     </div>
-                                    <span>${((item.price_cents || 500) * item.quantity / 100).toFixed(2)}</span>
+                                    <span>${((item.price_cents || 0) * item.quantity / 100).toFixed(2)}</span>
                                 </div>
                             </div>
                         ))

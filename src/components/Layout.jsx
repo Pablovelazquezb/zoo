@@ -1,12 +1,15 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Cat, Users, Ticket, Calendar, Settings, ShoppingBag } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { LayoutDashboard, Cat, Users, Ticket, Calendar, Settings, ShoppingBag, Shield } from 'lucide-react';
 
 export default function Layout({ children }) {
     const location = useLocation();
+    const { user, role, signOut } = useAuth();
 
     const navItems = [
         { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
+        ...(role === 'admin' ? [{ name: 'Admin Panel', path: '/admin', icon: <Shield size={20} /> }] : []),
         { name: 'Animals', path: '/animals', icon: <Cat size={20} /> },
         { name: 'Staff', path: '/staff', icon: <Users size={20} /> },
         { name: 'Tickets', path: '/tickets', icon: <Ticket size={20} /> },
@@ -60,7 +63,9 @@ export default function Layout({ children }) {
 
                 <div style={{ padding: '20px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
                     <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)' }}>Logged in as</p>
-                    <p style={{ margin: '5px 0 0', fontWeight: 600 }}>Admin User</p>
+                    <p style={{ margin: '5px 0 0', fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
+                    <p style={{ margin: '0', fontSize: '11px', color: 'var(--color-primary)', textTransform: 'uppercase' }}>{role || 'Staff'}</p>
+                    <button onClick={signOut} style={{ marginTop: '10px', background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0, fontSize: '12px' }}>Sign Out</button>
                 </div>
             </aside>
 

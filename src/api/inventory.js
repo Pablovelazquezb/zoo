@@ -3,19 +3,21 @@ import { handleSupabaseResult } from '../utils/apiHandler';
 
 export async function getInventoryItems() {
   const result = await supabase
-    .from('inventory_items')
+    .from('inventory')
     .select('*')
     .order('item_id', { ascending: true });
 
   return handleSupabaseResult(result);
 }
 
-export async function getShopItems() {
-  const result = await supabase
-    .from('inventory_items')
+export async function getShopItems(outletId) {
+  const { data, error } = await supabase
+    .from('inventory')
     .select('*')
     .gt('stock_count', 0)
+    .eq('outlet_id', outletId)
     .order('item_id', { ascending: true });
 
-  return handleSupabaseResult(result);
+  if (error) throw error;
+  return data || [];
 }

@@ -1,0 +1,60 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getShopItems } from '../../../api/inventory';
+
+export default function FoodShop() {
+  const navigate = useNavigate();
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    getShopItems(2).then(setItems);
+  }, []);
+
+  return (
+    <div style={{ color: 'white', padding: '20px', boxSizing: 'border-box' }}>
+      <section style={{ marginBottom: '40px' }}>
+        <h1 style={{ fontSize: '42px', marginBottom: '12px', textAlign: 'center' }}>
+          Food Shop
+        </h1>
+        <p style={{ color: 'var(--color-text-muted)', textAlign: 'center' }}>
+          Preview and Place your order for for any of the snacks/meals across the park! 
+        </p>
+      </section>
+
+      <section
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '12px',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
+        {items.map((item) => (
+          <div
+            key={item.item_id}
+            className="glass-panel"
+            style={{ padding: '16px', borderRadius: '32px', aspectRatio: '1 / 1' }}
+          >
+            <h2 style={{ marginTop: 0 }}>{item.item_name}</h2>
+            <p style={{ color: 'var(--color-text-muted)' }}>{item.description}</p>
+            <p style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
+              ${(item.price_cents / 100).toFixed(2)}
+            </p>
+            <button className="glass-button" style={{ marginTop: '16px' }}>
+              Add to Cart
+            </button>
+          </div>
+        ))}
+      </section>
+
+      <button
+        className="glass-button"
+        onClick={() => navigate('/shop')}
+        style={{ position: 'absolute', top: '20px', left: '20px' }}
+      >
+        Back
+      </button>
+    </div>
+  );
+}

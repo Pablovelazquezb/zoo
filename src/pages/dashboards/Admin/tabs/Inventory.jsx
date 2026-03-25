@@ -21,10 +21,10 @@ export default function Inventory() {
     async function fetchInventory() {
         try {
             const { data, error } = await supabase
-                .from('retail_outlets')
+                .from('shops')
                 .select(`
           *,
-          inventory_items (*)
+          inventory (*)
         `);
 
             if (error) throw error;
@@ -42,7 +42,7 @@ export default function Inventory() {
         const matchesOutlet = outlet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             outlet.type.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesItems = outlet.inventory_items?.some(item =>
+        const matchesItems = outlet.inventory?.some(item =>
             item.item_name.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
@@ -122,7 +122,7 @@ export default function Inventory() {
     const handleAddItem = async (e) => {
         e.preventDefault();
         try {
-            const { error } = await supabase.from('inventory_items').insert([{
+            const { error } = await supabase.from('inventory').insert([{
                 ...newItem,
                 stock_count: parseInt(newItem.stock_count),
                 restock_threshold: parseInt(newItem.restock_threshold),
@@ -149,7 +149,7 @@ export default function Inventory() {
 
         try {
             // Simple increment, no need for complex RPC although we could make one
-            const { error } = await supabase.from('inventory_items')
+            const { error } = await supabase.from('inventory')
                 .update({ stock_count: item.stock_count + amount })
                 .eq('item_id', item.item_id);
 
@@ -244,7 +244,7 @@ export default function Inventory() {
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    {outlet.inventory_items?.map(item => (
+                                    {outlet.inventory?.map(item => (
                                         <div key={item.item_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 <Package size={16} color="var(--color-text-muted)" />
@@ -291,7 +291,7 @@ export default function Inventory() {
                                             </div>
                                         </div>
                                     ))}
-                                    {outlet.inventory_items?.length === 0 && <p style={{ color: 'var(--color-text-muted)', textAlign: 'center' }}>No items in stock.</p>}
+                                    {outlet.inventory?.length === 0 && <p style={{ color: 'var(--color-text-muted)', textAlign: 'center' }}>No items in stock.</p>}
                                 </div>
                             </div>
                         ))}

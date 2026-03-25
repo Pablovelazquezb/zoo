@@ -9,6 +9,9 @@ import PublicTickets from './pages/public/Tickets/Tickets';
 import Shop from './pages/public/Shop/Shop';
 import Donations from './pages/public/Donations/Donations';
 
+import GiftShop from './pages/public/Shop/GiftShop';
+import FoodShop from './pages/public/Shop/FoodShop';
+
 import Login from './pages/auth/Login';
 
 import Dashboard from './pages/dashboards/Admin/Dashboard';
@@ -49,6 +52,9 @@ function App() {
           <Route path="/tickets" element={<PublicTickets />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/donations" element={<Donations />} />
+
+          <Route path="/shop/gifts" element={<GiftShop />} />
+          <Route path="/shop/food" element={<FoodShop />} />
 
           {/* Protected Routes */}
           <Route element={<PrivateRoute />}>

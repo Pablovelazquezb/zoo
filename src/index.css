@@ -94,3 +94,10 @@ a {
   color: var(--color-primary);
   text-decoration: none;
 }
+
+.text-xs {
+  color: white;
+}
+
+
+

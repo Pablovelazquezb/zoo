@@ -8,7 +8,6 @@ import Home from './pages/public/Home/Home';
 import PublicTickets from './pages/public/Tickets/Tickets';
 import Shop from './pages/public/Shop/Shop';
 import Donations from './pages/public/Donations/Donations';
-import Checkout from './pages/public/Checkout/Checkout';  
 
 import GiftShop from './pages/public/Shop/GiftShop';
 import FoodShop from './pages/public/Shop/FoodShop';
@@ -53,7 +52,6 @@ function App() {
           <Route path="/tickets" element={<PublicTickets />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/donations" element={<Donations />} />
-          <Route path="/checkout" element={<Checkout />} /> 
 
           <Route path="/shop/gifts" element={<GiftShop />} />
           <Route path="/shop/food" element={<FoodShop />} />

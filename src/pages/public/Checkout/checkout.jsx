@@ -1,4 +1,4 @@
-// src/pages/public/Checkout/Checkout.jsx
+
 import React from 'react';
 
 const Checkout = () => {

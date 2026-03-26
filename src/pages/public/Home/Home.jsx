@@ -4,7 +4,8 @@ import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
 import { getUpcomingEvents, getHomeStats } from '../../../api/public';
 
 // Import React Icons
-import { FaClock, FaTicketAlt, FaMap } from 'react-icons/fa';
+import { FaClock, FaTicketAlt, FaMap, FaMapMarkerAlt, FaPhone, FaEnvelope } from 'react-icons/fa';
+
 
 // Import Swiper styles
 import 'swiper/css';
@@ -12,12 +13,11 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
 
-
 export default function Home() {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
-  const [homeStats, setHomeStats] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchUpcomingEvents = async () => {
       try {
         const events = await getUpcomingEvents();
@@ -33,7 +33,7 @@ export default function Home() {
   const slides = [
     {
       image: 'src/images/elephant2.jpg',
-      title: 'Welcome to the zoo!',
+      title: 'Stop by the Zoo!',
       subtitle: 'Experience over x species from around the world',
       buttons: [{ text: '🎟️ Buy Tickets', link: '/tickets', variant: 'primary' }]
     },
@@ -51,7 +51,7 @@ export default function Home() {
     },
     {
       image: 'src/images/penguin.jpg',
-      title: 'Join us for a lunch with the Zoo Keepers!',
+      title: 'Lunch with the Zoo Keepers!',
       subtitle: 'Learn more about how you can support the zoo!',
       buttons: [{ text: '🍽️ RVSP for the lunch!', link: '/RSVP', variant: 'secondary' }]
     }
@@ -62,11 +62,11 @@ export default function Home() {
       {/* Navigation Bar */}
       <nav className="navbar">
         <div className="navbar-container">
-          <a href="/tickets" className="navbar-link navbar-link-primary">
+          <a href="/tickets" className="navbar-link">
             🎟️ Buy Tickets
           </a>
-          <a href="/map" className="navbar-link">
-            🗺️ Zoo Map
+          <a href="/membership" className="navbar-link">
+            🐯 Membership
           </a>
           <a href="/events" className="navbar-link">
             📅 Events
@@ -154,7 +154,7 @@ export default function Home() {
             <a href="/tickets" className="info-card">
               <FaTicketAlt className="info-icon" size={50} />
               <p className="info-label">Buy Tickets</p>
-              <p className="info-value">Click here</p>
+              <p className="info-value">Admission </p>
             </a>
             
             <a href="/map" className="info-card">
@@ -170,26 +170,26 @@ export default function Home() {
         {/* Upcoming Events */}
         <section className="content-section">
           <div className="section-header">
-            <h2 className="section-title">Upcoming Events</h2>
+            <h2 className="section-title">Today's Schedule</h2>
             <a href="/events" className="section-link">
-              View all events →
+              Full schedule →
             </a>
           </div>
           <div className="card">
-            <p className="card-placeholder">Event calendar will go here.</p>
+            <p className="card-placeholder">Animal shows and feeding times will appear here. </p>
           </div>
         </section>
 
         {/* Today's Schedule */}
         <section className="content-section">
           <div className="section-header">
-            <h2 className="section-title">Today's Schedule</h2>
+            <h2 className="section-title">Upcoming Events</h2>
             <a href="/schedule" className="section-link">
-              Full schedule →
+              View all events → 
             </a>
           </div>
           <div className="card">
-            <p className="card-placeholder">Animal shows and feeding times will appear here.</p>
+            <p className="card-placeholder">Event calendar will go here.</p>
           </div>
         </section>
 
@@ -211,6 +211,66 @@ export default function Home() {
           </div>
         </section>
       </div>
+
+      {/* Footer */}
+      <footer className="footer">
+          <div className="footer-container">
+            {/* Main Footer Content */}
+            <div className="footer-main">
+              {/* Logo and About Section */}
+              <div className="footer-section footer-brand">
+                <div className="footer-logo">
+                  <div className="logo-placeholder">
+                    🦁 Coog Zoo
+                  </div>
+                </div>
+                <p className="footer-description">
+                  Discover amazing wildlife, attend exciting events, and support animal conservation at Coog Zoo.
+                </p>
+              </div>
+
+              {/* Contact Information */}
+              <div className="footer-section">
+                <h3 className="footer-title">Contact Us</h3>
+                <div className="footer-contact-info">
+                  <div className="contact-item">
+                    <FaMapMarkerAlt className="contact-icon" />
+                    <div>
+                      <p>4302 University Dr</p>
+                      <p>Houston, TX 77004</p>
+                    </div>
+                  </div>
+                  <div className="contact-item">
+                    <FaPhone className="contact-icon" />
+                    <a href="tel:5555555555">555-555-5555</a>
+                  </div>
+                  <div className="contact-item">
+                    <FaEnvelope className="contact-icon" />
+                    <a href="mailto:info@coogzoo.org">info@coogzoo.org</a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Links */}
+              <div className="footer-section">
+                <h3 className="footer-title">Quick Links</h3>
+                <ul className="footer-links">
+                  <li><a href="/about">About Us</a></li>
+                  <li><a href="/contact">Contact</a></li>
+                  <li><a href="/schedule">Calendar</a></li>
+                  <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Copyright Bar */}
+            <div className="footer-bottom">
+              <div className="footer-bottom-content">
+                <p>&copy; {new Date().getFullYear()} Coog Zoo. All rights reserved.</p>
+                </div>
+              </div>
+          </div>
+        </footer>
     </div>
   );
 }
